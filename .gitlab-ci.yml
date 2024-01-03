@@ -1,0 +1,44 @@
+variables:
+  SERVICE_PORT: 80
+  MYSQL_REGISTRY_URL: 751503455312.dkr.ecr.us-east-1.amazonaws.com/elabmysql:latest
+  PHP_MY_ADMIN_REGISTRY_URL: 751503455312.dkr.ecr.us-east-1.amazonaws.com/phpmysqladmin:latest
+  REGISTRY_URL: 751503455312.dkr.ecr.us-west-2.amazonaws.com/pgnonprod
+  RELEASE_NAME: project5527
+  EKS_HOST_NAME: pgtest.altimetrik.com
+  APP_URL: https://$EKS_HOST_NAME/$RELEASE_NAME
+  MYSQL_ROOT_PASSWORD: password
+  MYSQL_PORT: 3306
+
+stages:
+  - Cleanup
+  - Deploy
+  - AppDeploymentValidation
+
+Cleanup:
+  stage: Cleanup
+  script:
+    - cd ./helm && /sbin/helm delete --purge $RELEASE_NAME && exit 0
+  allow_failure: true
+
+Deploy:
+  stage: Deploy
+  script:
+    - sed -i s+#REGISTRY_URL#+$REGISTRY_URL+g ./helm/service/values.yaml
+    - sed -i s+#BUILD_ID#+$CI_PIPELINE_ID+g ./helm/service/values.yaml
+    - sed -i s+#SERVICE_PORT#+$SERVICE_PORT+g ./helm/service/values.yaml
+    - sed -i s+#RELEASE_NAME#+$RELEASE_NAME+g ./helm/service/values.yaml ./helm/service/Chart.yaml ./helm/service/templates/service.yaml ./helm/service/templates/ingress.yaml ./helm/service/templates/deployment.yaml ./helm/service/templates/_helpers.tpl ./helm/service/templates/tests/test-connection.yaml
+    - sed -i s+#EKS_HOST_NAME#+$EKS_HOST_NAME+g ./helm/service/values.yaml
+    - sed -i s+#MYSQL_REGISTRY_URL#+$MYSQL_REGISTRY_URL+g ./helm/service/templates/deployment.yaml
+    - sed -i s+#MYSQL_ROOT_PASSWORD#+$MYSQL_ROOT_PASSWORD+g ./helm/service/templates/deployment.yaml
+    - sed -i s+#PHP_MY_ADMIN_REGISTRY_URL#+$PHP_MY_ADMIN_REGISTRY_URL+g ./helm/service/templates/deployment.yaml
+    - sed -i s+#MYSQL_PORT#+$MYSQL_PORT+g ./helm/service/templates/service.yaml ./helm/service/templates/deployment.yaml
+    - sed -i s+#APP_URL#+$APP_URL+g ./helm/service/templates/deployment.yaml
+    - kubectl config use-context arn:aws:eks:us-west-2:751503455312:cluster/pg-eks
+    - cd ./helm && /sbin/helm install service --name $RELEASE_NAME
+
+AppDeploymentValidation:
+  stage: AppDeploymentValidation
+  script:
+    - sleep 36
+    - if [ `curl -s -o /dev/null -I -w "%{http_code}" $APP_URL/` = "200" ]; then exit 0; else exit 1; fi
+  allow_failure: false

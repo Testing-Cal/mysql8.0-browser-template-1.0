@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "#RELEASE_NAME#.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "#RELEASE_NAME#.name" . }}
+    helm.sh/chart: {{ include "#RELEASE_NAME#.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: 3306
+      targetPort: http
+      protocol: TCP
+      name: http
+    - port: {{ .Values.service.phpmyadminPort }}
+      targetPort: {{ .Values.service.phpmyadminPort }}
+      protocol: TCP
+      name: phpmyadmin
+  selector:
+    app.kubernetes.io/name: {{ include "#RELEASE_NAME#.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
