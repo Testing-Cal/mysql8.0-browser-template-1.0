@@ -13,7 +13,10 @@ fullnameOverride: ""
 service:
   type: LoadBalancer
   port: 80
+  scheme: internet-facing
   internalport: CONTAINER_PORT
+  #annotations:
+  #extraAnnotations:
   phpmyadminPort: 80
 
 mysql:
