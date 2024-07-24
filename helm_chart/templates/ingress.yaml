@@ -10,10 +10,26 @@ metadata:
     helm.sh/chart: {{ include "#RELEASE_NAME#.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-  {{- with .Values.ingress.annotations }}
   annotations:
+{{- with .Values.ingress.annotations }}
+  {{- toYaml . | nindent 4 }}
+{{- end }}
+{{- if eq .Values.ingress.controllerType  "alb" }}
+  {{- with .Values.ingress.albAnnotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- with .Values.ingress.albExtraAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
+{{- if eq .Values.ingress.controllerType  "nginx" }}
+  {{- with .Values.ingress.nginxAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- with .Values.ingress.nginxExtraAnnotations }}
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
 spec:
   {{- if .Values.ingress.tls }}
   tls:
