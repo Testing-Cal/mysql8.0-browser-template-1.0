@@ -86,7 +86,9 @@ pipeline {
 									cp "$KUBECONFIG" kube
 									sed -i s+#SERVICE_NAME#+"$service"+g ./helm_chart/values.yaml ./helm_chart/Chart.yaml
 									kubectl create ns "dev-mysql" || true
-									helm upgrade --install mysql -n "dev-mysql" helm_chart --atomic --timeout 300s --set image.tag=8.0-debian-12  --set auth.rootPassword="password" --set primary.persistence.size="6Gi" --set primary.service.type="LoadBalancer"
+									helm version
+									docker run --rm  --user root -v "$KUBECONFIG":"$KUBECONFIG" -e KUBECONFIG="$KUBECONFIG" -v "$WORKSPACE":/apps -w /apps alpine/helm:3.8.1 upgrade --install mysql -n "dev-mysql" helm_chart --atomic --timeout 300s --set image.tag=8.0-debian-12  --set auth.rootPassword="password" --set primary.persistence.size="6Gi"
+
 									sleep 10
 								'''
 								script {
