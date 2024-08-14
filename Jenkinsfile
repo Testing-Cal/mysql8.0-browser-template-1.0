@@ -85,8 +85,8 @@ pipeline {
 									mkdir -p kube
 									cp "$KUBECONFIG" kube
 									sed -i s+#SERVICE_NAME#+"$service"+g ./helm_chart/values.yaml ./helm_chart/Chart.yaml
-									kubectl create ns "$namespace_name" || true
-									helm upgrade --install $RELEASE_NAME -n "$namespace_name" helm_chart --atomic --timeout 300s --set image.repository=mysql --set image.tag=8.0.1  --set service.internalport="3306" --set mysql.password="password" --set image.projectID="sample-project-static-value-kubernete"
+									kubectl create ns "dev-mysql" || true
+									helm upgrade --install mysql -n "dev-mysql" helm_chart --atomic --timeout 300s --set image.tag=8.0-debian-12  --set auth.rootPassword="password" --set primary.persistence.size="6Gi" --set primary.service.type="LoadBalancer"
 									sleep 10
 								'''
 								script {
