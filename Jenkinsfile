@@ -214,7 +214,7 @@ pipeline {
         SERVICE_PORT = "${APP_PORT}"
         DOCKERHOST = "${DOCKERHOST_IP}"
         REGISTRY_URL = "${DOCKER_REPO_URL}"
-		
+
 		DEPLOYMENT_TYPE = "${DEPLOYMENT_TYPE == ""? "EC2":DEPLOYMENT_TYPE}"
 		KUBE_SECRET = "${KUBE_SECRET}"
 		MYSQL_IMAGE = "bitnami/mysql:8.0-debian-12"
@@ -223,7 +223,6 @@ pipeline {
     }
     stages {
 		stage('Initialization') {
-			agent { label agentLabel }
 			steps {
 				script {
 					def listValue = "$env.LIST"
@@ -235,26 +234,60 @@ pipeline {
                                   if(metadataVars.repoName == ''){
                                       metadataVars.repoName = env.RELEASE_NAME
                                   }
+                                                  //Getting Container Registry URL
+                                    env.REGISTRY_URL = metadataVars.containerImagePath
+                                    env.BUILD_TAG = metadataVars.containerImageTag
+                                    env.KUBE_SECRET = metadataVars.kubernetesSecret
+                                    env.ARTIFACTORY_CREDENTIALS = metadataVars.artifactorySecret
+                                    env.ARTIFACTORY = metadataVars.artifactory
+
+                                    env.STAGE_FLAG = metadataVars.stageFlag
+                                    env.DOCKERHOST = metadataVars.dockerHostIP
+                                    env.RELEASE_NAME = metadataVars.name
 
 
-
-                                  if (env.DEPLOYMENT_TYPE == 'KUBERNETES' || env.DEPLOYMENT_TYPE == 'OPENSHIFT') {
+                               if (env.DEPLOYMENT_TYPE == 'KUBERNETES' || env.DEPLOYMENT_TYPE == 'OPENSHIFT') {
                                     String kubeProperties = parseJsonString(env.JENKINS_METADATA,'kubernetes')
+                                    String helmProperties = parseJsonString(env.JENKINS_METADATA,'helm')
+                                    helmVars = parseJsonArray(helmProperties)
                                     kubeVars = parseJsonArray(kubeProperties)
+
                                     if(kubeVars['vault']){
                                         String kubeData = parseJsonString(kubeProperties,'vault')
                                         def kubeValues = parseJsonArray(kubeData)
+                                        def tempMap = [vault : [vault : kubeValues]]
+                                        String vaultString = writeJSON returnText: true, json: tempMap
                                         if(kubeValues.type == 'vault'){
+                                            String vault_file = parseYaml(vaultString, 'vault')
                                             String helm_file = parseYaml(env.JENKINS_METADATA)
                                             echo helm_file
+                                            echo vault_file
+                                            createYamlFile(vault_file,"vault.yaml")
                                             createYamlFile(helm_file,"Helm.yaml")
                                         }
                                     }else {
+                                        sh 'touch "vault.yaml"'
                                         String helm_file = parseYaml(env.JENKINS_METADATA)
                                         echo helm_file
                                         createYamlFile(helm_file,"Helm.yaml")
                                     }
-                                 }
+                                }
+                                def job_name = "$env.JOB_NAME"
+
+                               print(job_name)
+                               print(metadataVars.helmReleaseName)
+                               def namespace = ''
+                               if (env.DEPLOYMENT_TYPE == 'KUBERNETES' || env.DEPLOYMENT_TYPE == 'OPENSHIFT'){
+                                   if (kubeVars.namespace != null && kubeVars.namespace != '') {
+                                       namespace = kubeVars.namespace
+                                   }else{
+                                       echo "namespace not received"
+                                   }
+                               }
+                               print("kube namespace: $namespace")
+                               env.namespace_name = namespace
+
+
 
 				}
 			}
@@ -272,12 +305,13 @@ pipeline {
 
 					}
 					if (env.DEPLOYMENT_TYPE == 'KUBERNETES' || env.DEPLOYMENT_TYPE == 'OPENSHIFT') {
+                        sh """
+                             sed -i s+#SERVICE_NAME#+"${metadataVars.helmReleaseName}"+g ./helm_chart/values.yaml ./helm_chart/Chart.yaml
+
+                        """
 
 						withCredentials([file(credentialsId: "$KUBE_SECRET", variable: 'KUBECONFIG')]) {
-						         sh """
-                                    sed -i s+#SERVICE_NAME#+"${metadataVars.helmReleaseName}"+g ./helm_chart/Chart.yaml
 
-                                """
                                 if (env.DEPLOYMENT_TYPE == 'OPENSHIFT') {
                                     sh '''
                                         COUNT=$(grep 'serviceAccount' Helm.yaml | wc -l)
@@ -292,15 +326,14 @@ pipeline {
                                       '''
                                 }
 
-								sh '''
+								sh """
 									ls -lart
-
                                     cat Helm.yaml
-									sed -i s+#SERVICE_NAME#+"${metadataVars.helmReleaseName}"+g ./helm_chart/Chart.yaml
+
 									docker run --rm  --user root -v "$KUBECONFIG":"$KUBECONFIG" -e KUBECONFIG="$KUBECONFIG" -v "$WORKSPACE":/apps -w /apps alpine/helm:3.8.1 upgrade --install "${metadataVars.helmReleaseName}" -n "$namespace_name"  helm_chart  --create-namespace --atomic --timeout 300s --set image.tag=8.0-debian-12  --set auth.rootPassword="password" --set primary.persistence.size="6Gi" -f Helm.yaml
 
 									sleep 10
-								'''
+								"""
 
 						}
 					}
