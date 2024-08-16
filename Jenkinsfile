@@ -214,7 +214,7 @@ pipeline {
         SERVICE_PORT = "${APP_PORT}"
         DOCKERHOST = "${DOCKERHOST_IP}"
         REGISTRY_URL = "${DOCKER_REPO_URL}"
-		foldername = getFolderName()
+		
 		DEPLOYMENT_TYPE = "${DEPLOYMENT_TYPE == ""? "EC2":DEPLOYMENT_TYPE}"
 		KUBE_SECRET = "${KUBE_SECRET}"
 		MYSQL_IMAGE = "bitnami/mysql:8.0-debian-12"
