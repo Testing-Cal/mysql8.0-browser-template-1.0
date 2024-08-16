@@ -20,7 +20,7 @@ spec:
   publishNotReadyAddresses: true
   ports:
     - name: mysql
-      port: {{ .Values.primary.containerPorts.mysql }}
+      port: {{ .Values.service.port }}
       targetPort: mysql
     {{- if .Values.primary.service.exposeMySQLX }}
     - name: mysqlx

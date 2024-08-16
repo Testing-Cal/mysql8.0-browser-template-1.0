@@ -36,7 +36,7 @@ spec:
   {{- end }}
   ports:
     - name: mysql
-      port: {{ .Values.primary.service.ports.mysql }}
+      port: {{ .Values.service.port }}
       protocol: TCP
       targetPort: mysql
       {{- if (and (or (eq .Values.primary.service.type "NodePort") (eq .Values.primary.service.type "LoadBalancer")) .Values.primary.service.nodePorts.mysql) }}
