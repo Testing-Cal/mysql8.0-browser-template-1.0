@@ -301,7 +301,7 @@ pipeline {
 
 						sh """ ssh -o "StrictHostKeyChecking=no" ciuser@$DOCKERHOST "docker pull $MYSQL_IMAGE" """
 						sh """ ssh -o "StrictHostKeyChecking=no" ciuser@$DOCKERHOST "docker stop "${metadataVars.repoName}" || true && docker rm "${metadataVars.repoName}" || true" """
-						sh """ ssh -o "StrictHostKeyChecking=no" ciuser@$DOCKERHOST "docker run -d --restart always --name "${metadataVars.repoName}" -p $SERVICE_PORT:3306 -v /tmp/"${metadataVars.repoName}":/bitnami/mysql/data -e MYSQL_ROOT_PASSWORD='password'  $MYSQL_IMAGE " """
+						sh """ ssh -o "StrictHostKeyChecking=no" ciuser@$DOCKERHOST "mkdir -p /home/ciuser/"${metadataVars.repoName}" && chown -R 1001:1001 /home/ciuser/"${metadataVars.repoName}" && docker run -d --restart always --name "${metadataVars.repoName}" -p $SERVICE_PORT:3306 -v /home/ciuser/"${metadataVars.repoName}":/bitnami/mysql/data -e MYSQL_ROOT_PASSWORD='password'  $MYSQL_IMAGE " """
 
 					}
 					if (env.DEPLOYMENT_TYPE == 'KUBERNETES' || env.DEPLOYMENT_TYPE == 'OPENSHIFT') {
