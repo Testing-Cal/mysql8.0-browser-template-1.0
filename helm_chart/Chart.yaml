@@ -30,7 +30,7 @@ keywords:
 maintainers:
 - name: Lazsa
   url: https://lazsa.calibo.com
-name: #SERVICE_NAME#-mysql
+name: #SERVICE_NAME#
 sources:
 - https://lazsa.calibo.com
 version: 11.1.15
