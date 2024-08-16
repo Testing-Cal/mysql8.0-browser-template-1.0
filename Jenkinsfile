@@ -219,7 +219,7 @@ pipeline {
 		KUBE_SECRET = "${KUBE_SECRET}"
 		MYSQL_IMAGE = "bitnami/mysql:8.0-debian-12"
 		OC_IMAGE_VERSION = "quay.io/openshift/origin-cli:4.9.0" //https://quay.io/repository/openshift/origin-cli?tab=tags
-		$HELM_IMAGE_VERSION = "alpine/helm:3.8.1"
+		HELM_IMAGE_VERSION = "alpine/helm:3.8.1"
     }
     stages {
 		stage('Initialization') {
