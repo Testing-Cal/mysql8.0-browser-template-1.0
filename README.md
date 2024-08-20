@@ -1,2 +1,2 @@
-`Demo project for creating MySql and phpMyAdmin as the client to connect to MySql`
+Mysql 8.0.1 Template
  
